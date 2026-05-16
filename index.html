@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0d0510">
+<meta name="description" content="PaarLust – Spiele für Zwei">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="PaarLust">
+<title>PaarLust</title>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    const sw = `self.addEventListener('install',e=>e.waitUntil(caches.open('pl-v2').then(c=>c.addAll([location.pathname]))));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));`;
+    const blob = new Blob([sw], {type:'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(blob));
+  });
+}
+const mf = {name:"PaarLust",short_name:"PaarLust",start_url:".",display:"standalone",background_color:"#0d0510",theme_color:"#0d0510",icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231a0d22'/><text y='.9em' font-size='72' x='50%' text-anchor='middle'>🔥</text></svg>",sizes:"512x512",type:"image/svg+xml"}]};
+const mb = new Blob([JSON.stringify(mf)],{type:'application/json'});
+const ml = document.createElement('link'); ml.rel='manifest'; ml.href=URL.createObjectURL(mb); document.head.appendChild(ml);
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0d0510;--bg2:#160b1c;--bg3:#1f1128;
+  --accent:#c0507a;--accent2:#e8879e;--gold:#d4a853;
+  --text:#f0e8f5;--muted:#9a7faa;
+  --card-bg:#1a0d22;--card-border:#3a1f45;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;display:flex;flex-direction:column;align-items:center;-webkit-font-smoothing:antialiased}
+.app{width:100%;max-width:480px;height:100%;display:flex;flex-direction:column;overflow:hidden}
+.header{padding:calc(var(--safe-top) + 1rem) 1.5rem 0.75rem;text-align:center;flex-shrink:0;background:var(--bg)}
+.logo{font-family:'Playfair Display',serif;font-size:2rem;font-style:italic;background:linear-gradient(135deg,var(--accent2),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.tagline{font-size:.72rem;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-top:.2rem}
+.screen{display:none;flex-direction:column;flex:1;overflow-y:auto;overflow-x:hidden;padding:1rem 1.25rem 1rem;-webkit-overflow-scrolling:touch}
+.screen.active{display:flex}
+/* HOME */
+.home-illustration{text-align:center;margin:1rem 0 1.25rem;font-size:3.5rem;filter:drop-shadow(0 0 18px rgba(192,80,122,.45));flex-shrink:0}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem;flex-shrink:0}
+.mode-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:1.1rem .75rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;-webkit-user-select:none;user-select:none}
+.mode-card.selected{border-color:var(--accent);background:rgba(192,80,122,.08)}
+.mode-card:active{opacity:.8}
+.mode-icon{font-size:1.7rem;margin-bottom:.4rem}
+.mode-name{font-size:.88rem;font-weight:500}
+.mode-desc{font-size:.7rem;color:var(--muted);margin-top:.15rem}
+.intensity-row{background:var(--bg2);border-radius:14px;padding:.9rem 1rem;margin-bottom:1rem;flex-shrink:0}
+.intensity-label{font-size:.72rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.65rem}
+.intensity-buttons{display:flex;gap:.5rem}
+.int-btn{flex:1;padding:.55rem .25rem;border:1px solid var(--card-border);border-radius:10px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.78rem;cursor:pointer;transition:all .2s;-webkit-user-select:none;user-select:none}
+.int-btn.active{border-color:var(--accent);background:rgba(192,80,122,.15);color:var(--accent2)}
+.btn-primary{width:100%;padding:.95rem;background:linear-gradient(135deg,var(--accent),#8a2a4a);border:none;border-radius:14px;color:white;font-family:'Playfair Display',serif;font-size:1.05rem;font-style:italic;cursor:pointer;letter-spacing:.03em;flex-shrink:0;-webkit-user-select:none;user-select:none}
+.btn-primary:active{opacity:.85}
+/* DICE */
+.dice-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;padding:.5rem 0}
+.task-result{background:var(--card-bg);border:1px solid var(--card-border);border-radius:20px;padding:1.5rem;text-align:center;width:100%;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.65rem;position:relative;overflow:hidden;transition:opacity .25s}
+.task-result::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--gold))}
+.task-category{font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--accent2);font-weight:500}
+.task-text{font-family:'Playfair Display',serif;font-size:1.1rem;line-height:1.55;color:var(--text)}
+.task-hint{font-size:.74rem;color:var(--muted)}
+.dice-visual{width:110px;height:110px;background:var(--card-bg);border:2px solid var(--card-border);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:3.2rem;cursor:pointer;flex-shrink:0;-webkit-user-select:none;user-select:none}
+.dice-visual:active{transform:scale(.93)}
+.dice-visual.rolling{animation:roll .5s ease-in-out}
+@keyframes roll{0%{transform:rotate(0deg) scale(1)}25%{transform:rotate(-15deg) scale(.9)}75%{transform:rotate(15deg) scale(1.1)}100%{transform:rotate(0deg) scale(1)}}
+.dice-hint{font-size:.8rem;color:var(--muted)}
+/* CARDS */
+.card-stack{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem}
+.flip-card{width:100%;height:260px;perspective:1000px;cursor:pointer;flex-shrink:0}
+.flip-card-inner{width:100%;height:100%;transition:transform .55s;transform-style:preserve-3d;position:relative}
+.flip-card.flipped .flip-card-inner{transform:rotateY(180deg)}
+.card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.75rem 1.5rem;text-align:center}
+.card-front{background:var(--card-bg);border:1px solid var(--card-border);gap:.85rem}
+.card-front-pattern{font-size:2.8rem;filter:drop-shadow(0 0 10px rgba(192,80,122,.5))}
+.card-front-text{font-family:'Playfair Display',serif;font-size:1rem;font-style:italic;color:var(--muted)}
+.card-back{background:linear-gradient(135deg,#2a0f2f,#1a0820);border:1px solid var(--accent);transform:rotateY(180deg);gap:.85rem;overflow:hidden}
+.card-back::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(192,80,122,.12) 0%,transparent 70%)}
+.card-back-category{font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--accent2);font-weight:500;position:relative}
+.card-back-text{font-family:'Playfair Display',serif;font-size:1.1rem;line-height:1.5;color:var(--text);position:relative}
+.progress-row{display:flex;align-items:center;gap:.75rem;width:100%}
+.progress-bar{flex:1;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:2px;transition:width .3s}
+.progress-text{font-size:.72rem;color:var(--muted);white-space:nowrap}
+.card-controls{display:flex;gap:.75rem;width:100%}
+.btn-secondary{flex:1;padding:.8rem;background:var(--bg2);border:1px solid var(--card-border);border-radius:12px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.9rem;cursor:pointer;-webkit-user-select:none;user-select:none}
+.btn-secondary:active{opacity:.7}
+/* CUSTOM */
+.custom-label{font-size:.72rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem;flex-shrink:0}
+.custom-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:.75rem}
+.custom-item{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:.8rem 1rem;margin-bottom:.45rem;display:flex;align-items:center;gap:.75rem}
+.custom-item-text{flex:1;font-size:.86rem;color:var(--text)}
+.custom-item-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:.25rem .4rem;flex-shrink:0}
+.custom-add-row{display:flex;gap:.5rem;flex-shrink:0}
+.custom-input{flex:1;padding:.8rem 1rem;background:var(--bg2);border:1px solid var(--card-border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;-webkit-appearance:none}
+.custom-input:focus{border-color:var(--accent)}
+.custom-input::placeholder{color:var(--muted)}
+.btn-add{padding:.8rem 1.15rem;background:var(--accent);border:none;border-radius:12px;color:white;font-size:1.4rem;cursor:pointer;flex-shrink:0}
+.btn-add:active{opacity:.8}
+/* PFLICHT */
+.pflicht-tabs{display:flex;gap:.4rem;margin-bottom:1rem;flex-shrink:0;background:var(--bg2);border-radius:12px;padding:.3rem}
+.ptab{flex:1;padding:.5rem;border:none;border-radius:9px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;transition:all .2s;-webkit-user-select:none;user-select:none}
+.ptab.active{background:var(--card-bg);color:var(--text);border:1px solid var(--card-border)}
+.pscreen{display:none;flex-direction:column;flex:1;overflow:hidden}
+.pscreen.active{display:flex}
+.deck-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:.75rem}
+.deck-item{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:.75rem 1rem;margin-bottom:.45rem;display:flex;align-items:flex-start;gap:.75rem}
+.deck-item-text{flex:1;font-size:.86rem;color:var(--text);line-height:1.4}
+.deck-item-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:.25rem .4rem;flex-shrink:0}
+.player-setup-title{font-size:.72rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.65rem}
+.player-list{margin-bottom:.75rem}
+.player-item{background:var(--card-bg);border:1px solid var(--card-border);border-radius:10px;padding:.6rem .9rem;margin-bottom:.4rem;display:flex;align-items:center;gap:.6rem}
+.player-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.player-name-text{flex:1;font-size:.88rem}
+.player-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.95rem;padding:.2rem .35rem}
+.player-add-row{display:flex;gap:.5rem;margin-bottom:1rem}
+.rounds-row{background:var(--bg2);border-radius:12px;padding:.85rem 1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between}
+.rounds-label{font-size:.82rem;color:var(--muted)}
+.rounds-counter{display:flex;align-items:center;gap:.75rem}
+.rounds-btn{width:32px;height:32px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;color:var(--text);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.rounds-val{font-size:1rem;font-weight:500;min-width:24px;text-align:center}
+/* GAME */
+.pflicht-game{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem}
+.round-info{display:flex;justify-content:space-between;align-items:center;width:100%;flex-shrink:0}
+.round-badge{background:var(--bg2);border:1px solid var(--card-border);border-radius:20px;padding:.35rem .9rem;font-size:.75rem;color:var(--muted)}
+.player-badge{background:rgba(192,80,122,.15);border:1px solid var(--accent);border-radius:20px;padding:.35rem .9rem;font-size:.75rem;color:var(--accent2);font-weight:500}
+.big-pflicht-card{width:100%;min-height:220px;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1.5rem;text-align:center;gap:1rem;position:relative;overflow:hidden;cursor:pointer;transition:opacity .25s}
+.big-pflicht-card.hidden-card{background:linear-gradient(135deg,#2a0f2f,#1a0820);border:1px solid var(--accent)}
+.big-pflicht-card.shown-card{background:var(--card-bg);border:1px solid var(--card-border)}
+.big-pflicht-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--gold))}
+.cover-icon{font-size:2.5rem}
+.cover-text{font-family:'Playfair Display',serif;font-size:1rem;font-style:italic;color:var(--muted)}
+.pflicht-card-label{font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--accent2);font-weight:500}
+.pflicht-card-text{font-family:'Playfair Display',serif;font-size:1.2rem;line-height:1.55;color:var(--text)}
+.pflicht-card-hint{font-size:.74rem;color:var(--muted)}
+.game-actions{display:flex;gap:.75rem;width:100%}
+.btn-done{flex:2;padding:.85rem;background:linear-gradient(135deg,var(--accent),#8a2a4a);border:none;border-radius:12px;color:white;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;-webkit-user-select:none;user-select:none}
+.btn-done:active{opacity:.8}
+.btn-skip{flex:1;padding:.85rem;background:var(--bg2);border:1px solid var(--card-border);border-radius:12px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.9rem;cursor:pointer;-webkit-user-select:none;user-select:none}
+.btn-skip:active{opacity:.7}
+/* END */
+.end-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1rem;padding:1rem 0}
+.end-trophy{font-size:4rem;filter:drop-shadow(0 0 16px rgba(212,168,83,.5))}
+.end-title{font-family:'Playfair Display',serif;font-size:1.6rem;font-style:italic;color:var(--gold)}
+.end-sub{font-size:.88rem;color:var(--muted);line-height:1.6}
+.stats-row{display:flex;gap:.75rem;width:100%}
+.stat-box{flex:1;background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:.85rem .5rem;text-align:center}
+.stat-num{font-size:1.4rem;font-weight:500;color:var(--accent2)}
+.stat-lbl{font-size:.7rem;color:var(--muted);margin-top:.2rem}
+/* NAV */
+.bottom-nav{display:flex;border-top:1px solid var(--bg3);background:var(--bg);flex-shrink:0;padding-bottom:var(--safe-bot)}
+.nav-btn{flex:1;padding:.7rem .3rem .6rem;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.64rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:.25rem;-webkit-user-select:none;user-select:none}
+.nav-icon{font-size:1.2rem}
+.nav-btn.active{color:var(--accent2)}
+.empty-state{text-align:center;padding:2.5rem 1rem;color:var(--muted);font-size:.88rem;line-height:1.7}
+.empty-state .big{font-size:2.2rem;margin-bottom:.75rem}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">PaarLust</div>
+    <div class="tagline">Spiele für Zwei</div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="home-illustration">🔥</div>
+    <div class="mode-grid">
+      <div class="mode-card selected" onclick="selectMode('dice')" id="mode-dice">
+        <div class="mode-icon">🎲</div>
+        <div class="mode-name">Würfeln</div>
+        <div class="mode-desc">Zufällige Aufgabe</div>
+      </div>
+      <div class="mode-card" onclick="selectMode('cards')" id="mode-cards">
+        <div class="mode-icon">🃏</div>
+        <div class="mode-name">Karten</div>
+        <div class="mode-desc">Aufdecken & erfüllen</div>
+      </div>
+    </div>
+    <div class="intensity-row">
+      <div class="intensity-label">Intensität</div>
+      <div class="intensity-buttons">
+        <button class="int-btn active" onclick="setIntensity('warm')" id="int-warm">🌶 Warm</button>
+        <button class="int-btn" onclick="setIntensity('heiss')" id="int-heiss">🔥 Heiß</button>
+        <button class="int-btn" onclick="setIntensity('inferno')" id="int-inferno">💥 Inferno</button>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="startGame()">Spiel starten →</button>
+  </div>
+
+  <!-- DICE -->
+  <div class="screen" id="screen-dice">
+    <div class="dice-area">
+      <div class="task-result" id="task-display">
+        <div class="task-text" style="color:var(--muted);font-style:italic;font-family:'Playfair Display',serif;">Würfle, um eine Aufgabe zu enthüllen...</div>
+      </div>
+      <div class="dice-visual" id="dice" onclick="rollDice()">🎲</div>
+      <div class="dice-hint">Tippe auf den Würfel</div>
+    </div>
+  </div>
+
+  <!-- CARDS -->
+  <div class="screen" id="screen-cards">
+    <div class="card-stack">
+      <div class="progress-row">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        <div class="progress-text" id="progress-text">0 / 0</div>
+      </div>
+      <div class="flip-card" id="flip-card" onclick="flipCard()">
+        <div class="flip-card-inner">
+          <div class="card-face card-front">
+            <div class="card-front-pattern">♦</div>
+            <div class="card-front-text">Tippe zum Aufdecken</div>
+          </div>
+          <div class="card-face card-back">
+            <div class="card-back-category" id="card-category">Aufgabe</div>
+            <div class="card-back-text" id="card-text">–</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-controls">
+        <button class="btn-secondary" onclick="prevCard()">← Zurück</button>
+        <button class="btn-secondary" onclick="nextCard()">Nächste →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PFLICHT -->
+  <div class="screen" id="screen-pflicht">
+    <div class="pflicht-tabs">
+      <button class="ptab active" onclick="showPTab('setup')" id="ptab-setup">Spiel</button>
+      <button class="ptab" onclick="showPTab('editor')" id="ptab-editor">Karten erstellen</button>
+    </div>
+    <!-- Setup -->
+    <div class="pscreen active" id="pscreen-setup">
+      <div class="player-setup-title">Spieler hinzufügen</div>
+      <div class="player-list" id="player-list"></div>
+      <div class="player-add-row">
+        <input class="custom-input" id="player-input" placeholder="Name eingeben..." maxlength="20" onkeydown="if(event.key==='Enter')addPlayer()" />
+        <button class="btn-add" onclick="addPlayer()">+</button>
+      </div>
+      <div class="rounds-row">
+        <div class="rounds-label">Runden pro Spieler</div>
+        <div class="rounds-counter">
+          <button class="rounds-btn" onclick="changeRounds(-1)">−</button>
+          <div class="rounds-val" id="rounds-val">3</div>
+          <button class="rounds-btn" onclick="changeRounds(1)">+</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="startPflicht()">Spiel starten →</button>
+    </div>
+    <!-- Editor -->
+    <div class="pscreen" id="pscreen-editor">
+      <div class="deck-list" id="deck-list"></div>
+      <div class="custom-add-row">
+        <input class="custom-input" id="deck-input" placeholder="Neue Pflicht-Karte..." maxlength="180" onkeydown="if(event.key==='Enter')addDeckCard()" />
+        <button class="btn-add" onclick="addDeckCard()">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PFLICHT GAME -->
+  <div class="screen" id="screen-pflicht-game">
+    <div class="pflicht-game">
+      <div class="round-info">
+        <div class="round-badge" id="pg-round">Runde 1</div>
+        <div class="player-badge" id="pg-player">Spieler</div>
+      </div>
+      <div class="big-pflicht-card hidden-card" id="pg-card" onclick="revealPflicht()">
+        <div class="cover-icon">🔥</div>
+        <div class="cover-text">Tippen zum Aufdecken</div>
+      </div>
+      <div class="game-actions">
+        <button class="btn-done" onclick="nextPflicht(true)">✓ Erledigt</button>
+        <button class="btn-skip" onclick="nextPflicht(false)">Überspringen</button>
+      </div>
+      <button class="btn-secondary" style="width:100%" onclick="endPflicht()">Spiel beenden</button>
+    </div>
+  </div>
+
+  <!-- PFLICHT END -->
+  <div class="screen" id="screen-pflicht-end">
+    <div class="end-screen">
+      <div class="end-trophy">🏆</div>
+      <div class="end-title">Spiel beendet!</div>
+      <div class="end-sub" id="end-sub">Was für eine Nacht...</div>
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-num" id="stat-done">0</div><div class="stat-lbl">Erledigt</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-skip">0</div><div class="stat-lbl">Übersprungen</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-rounds">0</div><div class="stat-lbl">Runden</div></div>
+      </div>
+      <button class="btn-primary" style="width:100%;margin-top:.5rem" onclick="showNav('pflicht')">Nochmal spielen</button>
+    </div>
+  </div>
+
+  <!-- CUSTOM -->
+  <div class="screen" id="screen-custom">
+    <div class="custom-label">Eigene Aufgaben (Würfeln & Karten)</div>
+    <div class="custom-list" id="custom-list"></div>
+    <div class="custom-add-row">
+      <input class="custom-input" id="custom-input" placeholder="Neue Aufgabe eingeben..." maxlength="150" onkeydown="if(event.key==='Enter')addCustom()" />
+      <button class="btn-add" onclick="addCustom()">+</button>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="showNav('home')" id="nav-home">
+      <span class="nav-icon">🏠</span><span>Start</span>
+    </button>
+    <button class="nav-btn" onclick="showNav('dice')" id="nav-dice">
+      <span class="nav-icon">🎲</span><span>Würfeln</span>
+    </button>
+    <button class="nav-btn" onclick="showNav('cards')" id="nav-cards">
+      <span class="nav-icon">🃏</span><span>Karten</span>
+    </button>
+    <button class="nav-btn" onclick="showNav('pflicht')" id="nav-pflicht">
+      <span class="nav-icon">🔥</span><span>Pflicht</span>
+    </button>
+    <button class="nav-btn" onclick="showNav('custom')" id="nav-custom">
+      <span class="nav-icon">✏️</span><span>Eigene</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+const TASKS = {
+  warm: {
+    Verführung: [
+      "Flüster deinem Partner ins Ohr, was du dir für heute Nacht wünschst.",
+      "Streich deinem Partner 60 Sekunden lang durchs Haar — ohne ein Wort zu sagen.",
+      "Schau deinem Partner 30 Sekunden lang tief in die Augen, ohne zu lachen.",
+      "Schreib deinem Partner eine freche Nachricht, auch wenn ihr im gleichen Raum seid.",
+      "Küss deinen Partner so, als wäre es das erste Mal.",
+      "Sag deinem Partner drei Dinge, die du an seinem Körper liebst.",
+      "Küss deinen Partner 2 Minuten lang am Nacken — nichts weiter.",
+      "Tanz mit deinem Partner so nah wie möglich — ein ganzes Lied lang.",
+    ],
+    Spannung: [
+      "Zieh deinem Partner langsam ein Kleidungsstück aus.",
+      "Verbinde deinem Partner die Augen und berühr ihn an drei verschiedenen Stellen.",
+      "Führe deinen Partner mit verbundenen Augen durch den Raum.",
+      "Flüster deinem Partner deine geheimste Fantasie ins Ohr.",
+      "Halte deinen Partner für eine volle Minute einfach nur fest.",
+      "Küss deinen Partner so, dass er oder sie es nicht vergisst.",
+    ],
+  },
+  heiss: {
+    Herausforderung: [
+      "Zeig deinem Partner, wo du am liebsten berührt werden möchtest.",
+      "Beschreibe deinem Partner in zwei Minuten deine heißeste Fantasie.",
+      "Führe deinen Partner ohne Worte — nur mit Berührungen.",
+      "Zieh dich vor deinem Partner langsam aus — ein Stück nach dem anderen.",
+      "Frag deinen Partner nach einer Sache, die er sich schon immer getraut zu versuchen.",
+      "Mach deinem Partner drei Minuten lang Komplimente — ausschließlich über seinen Körper.",
+      "Lass deinen Partner entscheiden, was als nächstes passiert — du machst alles mit.",
+      "Verbringt 5 Minuten damit, euch gegenseitig so zu küssen, wie es der andere am liebsten mag.",
+    ],
+    Nähe: [
+      "Schaut euch gegenseitig dabei zu, wie ihr euch für den anderen bereitmacht.",
+      "Schreibt auf einem Zettel je eine geheime Fantasie und tauscht sie aus.",
+      "Lass deinen Partner entscheiden, welches Kleidungsstück als nächstes fällt.",
+      "Zieht euch gegenseitig aus — so langsam wie möglich.",
+      "Gebt euch gegenseitig fünf Minuten ungeteilte Aufmerksamkeit — ganz körperlich.",
+    ],
+  },
+  inferno: {
+    Grenzen: [
+      "Sag deinem Partner laut, was du dir gerade am meisten wünschst — ohne es zu beschönigen.",
+      "Übernimm für 10 Minuten die Kontrolle — dein Partner folgt dir bedingungslos.",
+      "Beschreibe deinem Partner in allen Details, was du gleich mit ihm vorhast.",
+      "Lass deinen Partner entscheiden: dominieren oder sich unterordnen — und setz es um.",
+      "Verrate deinem Partner dein größtes Tabu — und fragt, ob ihr es ausprobieren wollt.",
+      "Zeig deinem Partner, was du willst — komplett ohne Worte.",
+      "Macht etwas, das ihr noch nie zuvor getan habt — jetzt, in diesem Moment.",
+      "Setzt für die nächsten 20 Minuten eine Fantasie um, über die ihr schon geredet habt.",
+      "Wechselt die Rollen: wer sonst führt, folgt jetzt — und umgekehrt.",
+      "Sagt euch gegenseitig, was euch am anderen verrückt macht — so explizit wie ihr mögt.",
+    ],
+  },
+};
+
+let state = {
+  mode: 'dice',
+  intensity: 'warm',
+  cardIndex: 0,
+  cardFlipped: false,
+  cardDeck: [],
+  customTasks: JSON.parse(localStorage.getItem('prlust_custom') || '[]'),
+  // Pflicht
+  pflichtDeck: JSON.parse(localStorage.getItem('prlust_pflicht_deck') || '[]'),
+  players: JSON.parse(localStorage.getItem('prlust_players') || '[]'),
+  roundsPerPlayer: 3,
+  // Game state
+  pg: { queue: [], currentIdx: 0, revealed: false, done: 0, skipped: 0 }
+};
+
+// ── NAV ──
+function showNav(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('screen-' + screen);
+  if (el) el.classList.add('active');
+  const nb = document.getElementById('nav-' + screen);
+  if (nb) nb.classList.add('active');
+}
+
+// ── HOME ──
+function selectMode(m) {
+  state.mode = m;
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('mode-' + m).classList.add('selected');
+}
+
+function setIntensity(i) {
+  state.intensity = i;
+  document.querySelectorAll('.int-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('int-' + i).classList.add('active');
+}
+
+function startGame() {
+  showNav(state.mode);
+  if (state.mode === 'cards') initCards();
+}
+
+// ── DICE ──
+function getAllTasks() {
+  const base = TASKS[state.intensity];
+  let all = [];
+  for (const cat in base) all = all.concat(base[cat].map(t => ({ text: t, cat })));
+  state.customTasks.forEach(t => all.push({ text: t, cat: 'Eigene' }));
+  return all;
+}
+
+function rollDice() {
+  const dice = document.getElementById('dice');
+  dice.classList.add('rolling');
+  setTimeout(() => dice.classList.remove('rolling'), 500);
+  const all = getAllTasks();
+  if (!all.length) return;
+  const pick = all[Math.floor(Math.random() * all.length)];
+  const display = document.getElementById('task-display');
+  display.style.opacity = '0';
+  setTimeout(() => {
+    display.innerHTML = `<div class="task-category">${pick.cat}</div><div class="task-text">${pick.text}</div><div class="task-hint">Nochmal würfeln für neue Aufgabe</div>`;
+    display.style.opacity = '1';
+  }, 220);
+}
+
+// ── CARDS ──
+function initCards() {
+  const all = getAllTasks();
+  state.cardDeck = all.sort(() => Math.random() - 0.5);
+  state.cardIndex = 0;
+  state.cardFlipped = false;
+  document.getElementById('flip-card').classList.remove('flipped');
+  updateCard();
+}
+
+function updateCard() {
+  const total = state.cardDeck.length;
+  if (!total) return;
+  const card = state.cardDeck[state.cardIndex % total];
+  document.getElementById('card-text').textContent = card.text;
+  document.getElementById('card-category').textContent = card.cat;
+  const pct = Math.round(((state.cardIndex + 1) / total) * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = (state.cardIndex + 1) + ' / ' + total;
+}
+
+function flipCard() {
+  state.cardFlipped = !state.cardFlipped;
+  document.getElementById('flip-card').classList.toggle('flipped', state.cardFlipped);
+}
+
+function nextCard() {
+  state.cardIndex = (state.cardIndex + 1) % state.cardDeck.length;
+  state.cardFlipped = false;
+  document.getElementById('flip-card').classList.remove('flipped');
+  setTimeout(updateCard, 50);
+}
+
+function prevCard() {
+  state.cardIndex = (state.cardIndex - 1 + state.cardDeck.length) % state.cardDeck.length;
+  state.cardFlipped = false;
+  document.getElementById('flip-card').classList.remove('flipped');
+  setTimeout(updateCard, 50);
+}
+
+// ── CUSTOM ──
+function saveCustom() { localStorage.setItem('prlust_custom', JSON.stringify(state.customTasks)); }
+
+function renderCustomList() {
+  const list = document.getElementById('custom-list');
+  if (!state.customTasks.length) {
+    list.innerHTML = '<div class="empty-state"><div class="big">✏️</div>Noch keine eigenen Aufgaben.<br>Füge sie hier hinzu — sie erscheinen beim Würfeln und bei den Karten.</div>';
+    return;
+  }
+  list.innerHTML = state.customTasks.map((t, i) => `
+    <div class="custom-item">
+      <div class="custom-item-text">${t}</div>
+      <button class="custom-item-del" onclick="removeCustom(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addCustom() {
+  const inp = document.getElementById('custom-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  state.customTasks.push(val);
+  saveCustom(); inp.value = ''; renderCustomList();
+}
+
+function removeCustom(i) {
+  state.customTasks.splice(i, 1);
+  saveCustom(); renderCustomList();
+}
+
+// ── PFLICHT TABS ──
+function showPTab(tab) {
+  document.querySelectorAll('.pscreen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
+  document.getElementById('pscreen-' + tab).classList.add('active');
+  document.getElementById('ptab-' + tab).classList.add('active');
+}
+
+// ── PFLICHT DECK EDITOR ──
+function savePflichtDeck() { localStorage.setItem('prlust_pflicht_deck', JSON.stringify(state.pflichtDeck)); }
+
+function renderDeckList() {
+  const list = document.getElementById('deck-list');
+  if (!state.pflichtDeck.length) {
+    list.innerHTML = '<div class="empty-state"><div class="big">🔥</div>Noch keine Karten.<br>Erstelle deine eigenen Pflicht-Karten für das Rundenspiel.</div>';
+    return;
+  }
+  list.innerHTML = state.pflichtDeck.map((t, i) => `
+    <div class="deck-item">
+      <div class="deck-item-text">${t}</div>
+      <button class="deck-item-del" onclick="removeDeckCard(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addDeckCard() {
+  const inp = document.getElementById('deck-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  state.pflichtDeck.push(val);
+  savePflichtDeck(); inp.value = ''; renderDeckList();
+}
+
+function removeDeckCard(i) {
+  state.pflichtDeck.splice(i, 1);
+  savePflichtDeck(); renderDeckList();
+}
+
+// ── PLAYERS ──
+function savePlayers() { localStorage.setItem('prlust_players', JSON.stringify(state.players)); }
+
+function renderPlayerList() {
+  const list = document.getElementById('player-list');
+  if (!state.players.length) {
+    list.innerHTML = '<div class="empty-state" style="padding:1rem 0"><div style="font-size:1.5rem;margin-bottom:.5rem">👥</div>Noch keine Spieler.</div>';
+    return;
+  }
+  list.innerHTML = state.players.map((p, i) => `
+    <div class="player-item">
+      <div class="player-dot"></div>
+      <div class="player-name-text">${p}</div>
+      <button class="player-del" onclick="removePlayer(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addPlayer() {
+  const inp = document.getElementById('player-input');
+  const val = inp.value.trim();
+  if (!val || state.players.length >= 8) return;
+  state.players.push(val);
+  savePlayers(); inp.value = ''; renderPlayerList();
+}
+
+function removePlayer(i) {
+  state.players.splice(i, 1);
+  savePlayers(); renderPlayerList();
+}
+
+function changeRounds(d) {
+  state.roundsPerPlayer = Math.max(1, Math.min(10, state.roundsPerPlayer + d));
+  document.getElementById('rounds-val').textContent = state.roundsPerPlayer;
+}
+
+// ── PFLICHT GAME ──
+function startPflicht() {
+  if (state.players.length < 1) { alert('Mindestens 1 Spieler hinzufügen!'); return; }
+  if (state.pflichtDeck.length < 1) { alert('Zuerst Karten erstellen! (Tab "Karten erstellen")'); return; }
+
+  // Build queue: players × rounds, shuffled deck repeating as needed
+  const queue = [];
+  const shuffled = [...state.pflichtDeck].sort(() => Math.random() - 0.5);
+  let cardIdx = 0;
+  for (let r = 0; r < state.roundsPerPlayer; r++) {
+    for (const player of state.players) {
+      queue.push({ player, card: shuffled[cardIdx % shuffled.length] });
+      cardIdx++;
+    }
+  }
+
+  state.pg = { queue, currentIdx: 0, revealed: false, done: 0, skipped: 0 };
+  showNav('pflicht-game');
+  renderGameCard();
+}
+
+function renderGameCard() {
+  const { queue, currentIdx } = state.pg;
+  const total = queue.length;
+  const current = queue[currentIdx];
+  const roundNum = Math.floor(currentIdx / state.players.length) + 1;
+
+  document.getElementById('pg-round').textContent = `Runde ${roundNum} von ${state.roundsPerPlayer}`;
+  document.getElementById('pg-player').textContent = current.player;
+
+  const card = document.getElementById('pg-card');
+  card.className = 'big-pflicht-card hidden-card';
+  card.innerHTML = `<div class="cover-icon">🔥</div><div class="cover-text">Tippen zum Aufdecken</div>`;
+  state.pg.revealed = false;
+}
+
+function revealPflicht() {
+  if (state.pg.revealed) return;
+  state.pg.revealed = true;
+  const current = state.pg.queue[state.pg.currentIdx];
+  const card = document.getElementById('pg-card');
+  card.className = 'big-pflicht-card shown-card';
+  card.innerHTML = `
+    <div class="pflicht-card-label">Pflicht</div>
+    <div class="pflicht-card-text">${current.card}</div>
+    <div class="pflicht-card-hint">Erledigt oder überspringen?</div>`;
+}
+
+function nextPflicht(done) {
+  if (!state.pg.revealed) { revealPflicht(); return; }
+  if (done) state.pg.done++; else state.pg.skipped++;
+  state.pg.currentIdx++;
+  if (state.pg.currentIdx >= state.pg.queue.length) {
+    endPflicht(); return;
+  }
+  renderGameCard();
+}
+
+function endPflicht() {
+  const { done, skipped, queue } = state.pg;
+  const total = state.pg.currentIdx;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-skip').textContent = skipped;
+  document.getElementById('stat-rounds').textContent = total;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  document.getElementById('end-sub').textContent =
+    pct >= 80 ? 'Ihr habt alles gegeben. Respekt. 🔥' :
+    pct >= 50 ? 'Nicht schlecht — aber da geht noch mehr...' :
+    'Nächstes Mal habt ihr keine Ausreden mehr. 😏';
+  showNav('pflicht-end');
+}
+
+// ── INIT ──
+renderCustomList();
+renderDeckList();
+renderPlayerList();
+</script>
+</body>
+</html>
